@@ -7,6 +7,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ChatClientHandler {
     private Socket socket;
@@ -15,6 +17,8 @@ public class ChatClientHandler {
     private Thread handlerThread;
     private JulyChatServer server;
     private String currentUser;
+
+    private static ExecutorService handlerService = Executors.newCachedThreadPool();
 
     public ChatClientHandler(Socket socket, JulyChatServer server) {
         try {
@@ -29,7 +33,8 @@ public class ChatClientHandler {
     }
 
     public void handle() {
-        handlerThread = new Thread(() -> {
+        //handlerThread = new Thread(() -> {
+            handlerService.execute(() -> {
             authorize();
             try {
                 while (!Thread.currentThread().isInterrupted() && socket.isConnected()) {
