@@ -11,6 +11,7 @@ import javafx.scene.layout.VBox;
 import ru.geekbrains.july_chat.chat_app.net.ChatMessageService;
 import ru.geekbrains.july_chat.chat_app.net.MessageProcessor;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
@@ -27,6 +28,7 @@ public class MainChatController implements Initializable, MessageProcessor {
     public ListView<String> contactList;
     public TextField inputField;
     public Button btnSendMessage;
+    private ChatLogger chatLogger;
 
 
     public void mockAction(ActionEvent actionEvent) {
@@ -40,14 +42,27 @@ public class MainChatController implements Initializable, MessageProcessor {
     public void sendMessage(ActionEvent actionEvent) {
         String text = inputField.getText();
         if (text.isEmpty()) return;
-        chatMessageService.send(this.nickName + ": " + text);
+        String message = this.nickName + ": " + text;
+        chatMessageService.send(message);
+//        try {
+//            chatLogger.chatLogAdd(message);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+// данная запись продублирует запись чатлога
         inputField.clear();
     }
 
 
     @Override
     public void processMessage(String message) {
-        Platform.runLater(() -> parseMessage(message));
+        Platform.runLater(() -> {
+            try {
+                parseMessage(message);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public void sendAuth(ActionEvent actionEvent) {
@@ -56,11 +71,16 @@ public class MainChatController implements Initializable, MessageProcessor {
         chatMessageService.send("auth: " + loginField.getText() + " " + passwordField.getText());
     }
 
-    private void parseMessage(String message) {
+    private void parseMessage(String message) throws IOException {
         if (message.startsWith("authok: ")) {
             this.nickName = message.substring(8);
             loginPanel.setVisible(false);
             mainChatPanel.setVisible(true);
+            this.chatLogger = new ChatLogger(nickName);
+            List<String> chatLog = chatLogger.chatLogReader();
+            for (String s : chatLog) {
+                mainChatArea.appendText(s + System.lineSeparator());
+            }
         } else if (message.startsWith("ERROR: ")) {
             showError(message);
         } else if (message.startsWith("$.list: ")) {
@@ -68,6 +88,7 @@ public class MainChatController implements Initializable, MessageProcessor {
             contactList.setItems(list);
         } else {
             mainChatArea.appendText(message + System.lineSeparator());
+            chatLogger.chatLogAdd(message + System.lineSeparator());
         }
     }
 
