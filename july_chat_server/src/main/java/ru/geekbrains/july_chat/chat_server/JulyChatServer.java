@@ -1,6 +1,7 @@
 package ru.geekbrains.july_chat.chat_server;
 
 import ru.geekbrains.july_chat.chat_server.auth.AuthService;
+import ru.geekbrains.july_chat.chat_server.auth.DbAuthService;
 import ru.geekbrains.july_chat.chat_server.auth.InMemoryAuthService;
 
 import java.io.IOException;
@@ -15,13 +16,15 @@ public class JulyChatServer {
     private List<ChatClientHandler> handlers;
 
     public JulyChatServer() {
-        this.authService = new InMemoryAuthService();
+        //this.authService = new InMemoryAuthService();
+        this.authService = new DbAuthService();
         this.handlers = new ArrayList<>();
     }
 
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("Server start!");
+            authService.start();
             while (true) {
                 System.out.println("Waiting for connection......");
                 Socket socket = serverSocket.accept();
@@ -30,6 +33,8 @@ public class JulyChatServer {
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            authService.stop();
         }
     }
 
